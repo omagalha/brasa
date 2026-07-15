@@ -6,6 +6,7 @@ import { suggestProgression } from "../services/progressionEngine";
 import { getExercisePerformances, getLastDoneSets } from "../services/workoutHistory";
 import { getExerciseRecords } from "../services/personalRecords";
 import { EXERCISES_BY_ID } from "../data/exercises";
+import { enrichExerciseMedia } from "../data/exerciseMedia";
 import ExerciseHistory from "../components/workout/ExerciseHistory";
 import Btn from "../components/Btn";
 import WorkoutTabs from "../components/workout/WorkoutTabs";
@@ -259,7 +260,9 @@ export default function Treino({ core, upCore, split, today, ws, setWs }) {
       />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {w.ex.map((ex, exIdx) =>
+        {w.ex.map((storedEx, exIdx) => {
+          const ex = enrichExerciseMedia(storedEx);
+          return (
           editing ? (
             <ExerciseEditor
               key={ex.id}
@@ -286,7 +289,8 @@ export default function Treino({ core, upCore, split, today, ws, setWs }) {
               onChangeSet={(i, field, v) => editSetField(ex, i, field, v)}
             />
           )
-        )}
+          );
+        })}
       </div>
 
       {editing && (

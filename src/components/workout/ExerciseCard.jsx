@@ -8,8 +8,27 @@ export default function ExerciseCard({
   exercise, sets, lastPerformance, suggestion, onApplySuggestion, onOpenHistory, onToggleSet, onChangeSet,
 }) {
   const done = sets.filter((s) => s.done).length;
+  const images = exercise.images?.length ? exercise.images : exercise.image ? [exercise.image] : [];
   return (
     <Card style={{ padding: 14 }}>
+      {images.length > 0 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 12, overflow: "hidden" }}>
+          {images.slice(0, 2).map((src, index) => (
+            <img
+              key={src}
+              src={src}
+              alt={`${exercise.name} — posição ${index + 1}`}
+              loading="lazy"
+              onError={(event) => { event.currentTarget.style.display = "none"; }}
+              style={{
+                width: images.length > 1 ? "calc(50% - 3px)" : "100%",
+                height: 132, objectFit: "contain", borderRadius: 10,
+                background: C.surface2, flexShrink: 0,
+              }}
+            />
+          ))}
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <button type="button" onClick={onOpenHistory} style={{
           background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer",

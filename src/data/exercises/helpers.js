@@ -1,3 +1,5 @@
+import { getExerciseMedia } from "../exerciseMedia";
+
 export const createExercise = (
   id, name, muscle, equipment, defaultSets, defaultReps, defaultKg, extra = {}
 ) => ({
@@ -6,5 +8,6 @@ export const createExercise = (
   level: "Intermediário",
   type: "isolation",
   restSeconds: 90,
+  ...getExerciseMedia(id),
   ...extra,
 });

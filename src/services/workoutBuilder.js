@@ -26,6 +26,8 @@ export function buildWorkouts(template) {
             reps: exercise.defaultReps,
             kg: exercise.defaultKg,
             restSeconds: exercise.restSeconds,
+            image: exercise.image || null,
+            images: exercise.images || [],
           };
         })
         .filter(Boolean),
