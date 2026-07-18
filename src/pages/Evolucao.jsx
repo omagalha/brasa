@@ -20,8 +20,10 @@ const PHOTO_TYPES = [
 export default function Evolucao({ core, upCore, photos, upPhotos, today, onWipeAll }) {
   const [kgInput, setKgInput] = useState("");
   const [view, setView] = useState("hoje"); // hoje | comparar
-  const fileRef = useRef(null);
+  const cameraRef = useRef(null);
+  const galleryRef = useRef(null);
   const [pendingType, setPendingType] = useState("frente");
+  const [photoChoice, setPhotoChoice] = useState(null);
   const [busy, setBusy] = useState(false);
   const backupRef = useRef(null);
   const [backupMsg, setBackupMsg] = useState(null);
@@ -96,12 +98,17 @@ export default function Evolucao({ core, upCore, photos, upPhotos, today, onWipe
 
   const pickPhoto = (type) => {
     setPendingType(type);
-    fileRef.current?.click();
+    setPhotoChoice(type);
+  };
+  const openPhotoSource = (source) => {
+    const target = source === "camera" ? cameraRef : galleryRef;
+    target.current?.click();
   };
   const onFile = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
+    setPhotoChoice(null);
     setBusy(true);
     try {
       const dataUrl = await compressImage(f);
@@ -190,7 +197,30 @@ export default function Evolucao({ core, upCore, photos, upPhotos, today, onWipe
           </div>
         </div>
 
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{ display: "none" }} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{ display: "none" }} />
+        <input ref={galleryRef} type="file" accept="image/*" onChange={onFile} style={{ display: "none" }} />
+
+        {view === "hoje" && photoChoice && (
+          <div role="dialog" aria-label={`Adicionar foto: ${PHOTO_TYPES.find((type) => type.id === photoChoice)?.label}`} style={{
+            padding: 12, marginBottom: 10, borderRadius: 12,
+            background: C.panel2, border: `1px solid ${C.line}`,
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 9 }}>
+              Adicionar foto de {PHOTO_TYPES.find((type) => type.id === photoChoice)?.label.toLowerCase()}
+            </div>
+            <div style={{ display: "flex", gap: 7 }}>
+              <Btn small onClick={() => openPhotoSource("camera")} style={{ flex: 1 }}>
+                Abrir câmera
+              </Btn>
+              <Btn small ghost onClick={() => openPhotoSource("gallery")} style={{ flex: 1 }}>
+                Escolher da galeria
+              </Btn>
+              <Btn small ghost onClick={() => setPhotoChoice(null)}>
+                Cancelar
+              </Btn>
+            </div>
+          </div>
+        )}
 
         {view === "hoje" && (
           <div style={{ display: "flex", gap: 8 }}>
@@ -199,7 +229,7 @@ export default function Evolucao({ core, upCore, photos, upPhotos, today, onWipe
               const isToday = ph && ph.date === today;
               return (
                 <div key={t.id} style={{ flex: 1 }}>
-                  <button onClick={() => pickPhoto(t.id)} disabled={busy} style={{
+                  <button type="button" aria-label={`Adicionar foto de ${t.label}`} onClick={() => pickPhoto(t.id)} disabled={busy} style={{
                     width: "100%", aspectRatio: "3/4", borderRadius: 12, overflow: "hidden",
                     background: C.panel2, border: `1px dashed ${isToday ? C.ember : C.line}`,
                     cursor: "pointer", padding: 0, position: "relative",

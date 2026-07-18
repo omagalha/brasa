@@ -3,6 +3,7 @@ import { C } from "./constants/theme";
 import { EMPTY_CORE, migrateCore } from "./storage/migrations";
 import { dkey, daysBetween, streakOf } from "./utils/dates";
 import { getDayCompletion, resolveDay } from "./services/schedule";
+import { buildWorkouts } from "./services/workoutBuilder";
 import { loadKey, saveKey, onSaveError } from "./utils/storage";
 import { loadPhotos, savePhotos, deleteAllPhotos } from "./storage/photoStorage";
 import { usePersistentWorkout, EMPTY_SESSION } from "./hooks/usePersistentWorkout";
@@ -12,6 +13,7 @@ import Treino from "./pages/Treino";
 import Agua from "./pages/Agua";
 import Cardio from "./pages/Cardio";
 import Evolucao from "./pages/Evolucao";
+import Onboarding from "./pages/Onboarding";
 
 export default function App() {
   const [tab, setTab] = useState("missao");
@@ -47,6 +49,41 @@ export default function App() {
       savePhotos(n);
       return n;
     });
+
+  const chooseInitialPlan = (template) => {
+    const workouts = buildWorkouts(template);
+    const schedule = structuredClone(template.schedule);
+    upCore((draft) => {
+      draft.workouts = workouts;
+      draft.schedule = schedule;
+      draft.activePlanId = template.id;
+      draft.activePlanName = template.name;
+      draft.planChosen = true;
+      return draft;
+    });
+    const split = resolveDay(schedule, new Date(), workouts).split;
+    clearSession({
+      date: dkey(),
+      sel: split || Object.keys(workouts)[0] || "A",
+    });
+  };
+
+  const buildInitialPlanFromScratch = () => {
+    const workouts = { A: { label: "Meu treino", ex: [] } };
+    const schedule = {
+      0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null,
+    };
+    upCore((draft) => {
+      draft.workouts = workouts;
+      draft.schedule = schedule;
+      draft.activePlanId = "personalizado";
+      draft.activePlanName = "Meu treino";
+      draft.planChosen = true;
+      return draft;
+    });
+    clearSession({ date: dkey(), sel: "A" });
+    setTab("treino");
+  };
 
   // apaga TUDO: core, fotos (inclusive a chave no IndexedDB) e o treino em memória
   const wipeAll = () => {
@@ -106,6 +143,15 @@ export default function App() {
         Acendendo a brasa…
       </div>
     );
+
+  if (!core.planChosen) {
+    return (
+      <Onboarding
+        onChoosePlan={chooseInitialPlan}
+        onBuildBlank={buildInitialPlanFromScratch}
+      />
+    );
+  }
 
   const today = dkey();
   const todayDay = resolveDay(core.schedule, new Date(), core.workouts);

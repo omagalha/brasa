@@ -43,6 +43,69 @@ console.log("sessão antiga convertida:", !!savedCore.sessions[0].exercises);
 const draft = JSON.parse(window.localStorage.getItem("brasa-active-workout"));
 console.log("rascunho criado p/ hoje:", draft?.date, "| treino selecionado:", draft?.sel);
 
+// core realmente novo deve abrir o onboarding e persistir a escolha.
+root.unmount();
+window.localStorage.clear();
+document.body.innerHTML = '<div id="onboarding-root"></div>';
+const onboardingRoot = createRoot(document.getElementById("onboarding-root"));
+onboardingRoot.render(React.createElement(App));
+await new Promise((r) => setTimeout(r, 300));
+
+const onboardingVisible = document.body.textContent.includes("Como você quer começar?");
+const chooseButton = [...document.querySelectorAll("button")]
+  .find((button) => button.textContent.includes("Escolher plano"));
+chooseButton?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+await new Promise((r) => setTimeout(r, 100));
+const chosenCore = JSON.parse(window.localStorage.getItem("brasa-core"));
+const onboardingCompleted =
+  chosenCore?.planChosen === true &&
+  !document.body.textContent.includes("Como você quer começar?");
+console.log("onboarding na primeira abertura:", onboardingVisible);
+console.log("escolha de plano persistida:", onboardingCompleted);
+
+// A evolução deve separar câmera e galeria.
+const progressButton = [...document.querySelectorAll("button")]
+  .find((button) => button.textContent.includes("Progresso"));
+progressButton?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+await new Promise((r) => setTimeout(r, 50));
+document.querySelector('button[aria-label="Adicionar foto de Frente"]')
+  ?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+await new Promise((r) => setTimeout(r, 20));
+const cameraInput = document.querySelector('input[type="file"][capture="environment"]');
+const galleryInput = [...document.querySelectorAll('input[type="file"]')]
+  .find((input) => !input.hasAttribute("capture"));
+const photoSourcesVisible =
+  document.body.textContent.includes("Abrir câmera") &&
+  document.body.textContent.includes("Escolher da galeria") &&
+  Boolean(cameraInput && galleryInput);
+console.log("câmera e galeria separadas:", photoSourcesVisible);
+
+// A alternativa "Montar do zero" cria um plano editável sem exercícios.
+onboardingRoot.unmount();
+window.localStorage.clear();
+document.body.innerHTML = '<div id="blank-root"></div>';
+const blankRoot = createRoot(document.getElementById("blank-root"));
+blankRoot.render(React.createElement(App));
+await new Promise((r) => setTimeout(r, 300));
+const blankButton = [...document.querySelectorAll("button")]
+  .find((button) => button.textContent.includes("Criar meu treino"));
+blankButton?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+await new Promise((r) => setTimeout(r, 100));
+const blankCore = JSON.parse(window.localStorage.getItem("brasa-core"));
+const blankPlanCreated =
+  blankCore?.planChosen === true &&
+  blankCore?.activePlanId === "personalizado" &&
+  Array.isArray(blankCore?.workouts?.A?.ex) &&
+  blankCore.workouts.A.ex.length === 0;
+console.log("plano montado do zero:", blankPlanCreated);
+
 console.log("erros de runtime:", errors.length ? errors.map(e => e?.message) : "nenhum");
-if (errors.length || html.includes("Acendendo a brasa")) process.exit(1);
+if (
+  errors.length ||
+  html.includes("Acendendo a brasa") ||
+  !onboardingVisible ||
+  !onboardingCompleted ||
+  !photoSourcesVisible ||
+  !blankPlanCreated
+) process.exit(1);
 console.log("✅ SMOKE TEST PASSOU");
