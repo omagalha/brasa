@@ -67,6 +67,26 @@ export function parseBackup(text) {
   if (badShape) {
     throw new Error("Backup corrompido: a estrutura dos dados não confere.");
   }
+  if (
+    core.cardio?.some(
+      (activity) =>
+        !activity ||
+        typeof activity.id !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(activity.date) ||
+        !["corrida", "caminhada", "bicicleta", "outro"].includes(activity.kind) ||
+        typeof activity.minutes !== "number" ||
+        !Number.isFinite(activity.minutes) ||
+        activity.minutes < 1 ||
+        activity.minutes > 1440 ||
+        (activity.distanceKm != null &&
+          (typeof activity.distanceKm !== "number" ||
+            !Number.isFinite(activity.distanceKm) ||
+            activity.distanceKm <= 0 ||
+            activity.distanceKm > 1000))
+    )
+  ) {
+    throw new Error("Backup corrompido: há atividades de cardio inválidas.");
+  }
   // pesos: mantém apenas registros válidos
   if (Array.isArray(core.weights)) {
     core.weights = core.weights.filter(

@@ -9,6 +9,7 @@ import Icon from "./components/Icon";
 import Missao from "./pages/Missao";
 import Treino from "./pages/Treino";
 import Agua from "./pages/Agua";
+import Cardio from "./pages/Cardio";
 import Evolucao from "./pages/Evolucao";
 
 export default function App() {
@@ -121,6 +122,7 @@ export default function App() {
   const tabs = [
     { id: "missao", icon: "flame", label: "Hoje" },
     { id: "treino", icon: "dumbbell", label: "Treinos" },
+    { id: "cardio", icon: "heart", label: "Cardio" },
     { id: "agua", icon: "drop", label: "Água" },
     { id: "evolucao", icon: "chart", label: "Progresso" },
   ];
@@ -164,6 +166,7 @@ export default function App() {
           <Missao {...{ core, split, restDay, waterToday, waterOK, trainedToday, streak, checkinDue, daysSinceWeight, lastWeight, setTab }} />
         )}
         {tab === "treino" && <Treino {...{ core, upCore, split, today, ws, setWs }} />}
+        {tab === "cardio" && <Cardio {...{ core, upCore, today }} />}
         {tab === "agua" && <Agua {...{ core, upCore, today, waterToday }} />}
         {tab === "evolucao" && <Evolucao {...{ core, upCore, photos, upPhotos, today, onWipeAll: wipeAll }} />}
       </div>

@@ -46,12 +46,29 @@ describe("backup", () => {
   it("faz round-trip dos campos v4", () => {
     const core = {
       version: 4,
-      cardio: [{ id: "walk-1", kind: "caminhada", minutes: 20 }],
+      cardio: [{ id: "walk-1", date: "2026-07-18", kind: "caminhada", minutes: 20 }],
       updatedAt: "2026-07-18T12:00:00.000Z",
       planChosen: true,
     };
     const parsed = parseBackup(JSON.stringify(buildBackup(core, { items: [] })));
 
     expect(parsed.core).toMatchObject(core);
+  });
+
+  it("rejeita atividades de cardio corrompidas", () => {
+    const invalidActivities = [
+      { id: "1", date: "2026-07-18", kind: "natação", minutes: 30 },
+      { id: "2", date: "2026-07-18", kind: "corrida", minutes: 0 },
+      { id: "3", date: "18/07/2026", kind: "corrida", minutes: 30 },
+    ];
+
+    for (const activity of invalidActivities) {
+      expect(() =>
+        parseBackup(JSON.stringify({
+          app: "brasafit",
+          core: { cardio: [activity] },
+        }))
+      ).toThrow(/atividades de cardio inválidas/);
+    }
   });
 });
