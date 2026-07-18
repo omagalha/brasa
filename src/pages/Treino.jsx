@@ -3,6 +3,7 @@ import { C } from "../constants/theme";
 import { fromKey } from "../utils/dates";
 import { buildWorkouts } from "../services/workoutBuilder";
 import { resolveDay } from "../services/schedule";
+import { applySetEdit, stripSetEditingMetadata } from "../services/setEditing";
 import { suggestProgression } from "../services/progressionEngine";
 import { getExercisePerformances, getLastDoneSets } from "../services/workoutHistory";
 import { getExerciseRecords } from "../services/personalRecords";
@@ -81,9 +82,7 @@ export default function Treino({ core, upCore, split, today, ws, setWs }) {
   };
 
   const editSetField = (ex, i, field, val) => {
-    const sets = getSets(ex).map((s) => ({ ...s }));
-    const n = parseFloat(String(val).replace(",", "."));
-    sets[i][field] = isNaN(n) ? 0 : Math.max(0, n);
+    const sets = applySetEdit(getSets(ex), i, field, val);
     up({ progress: { ...progress, [ex.id]: sets } });
   };
 
@@ -95,7 +94,10 @@ export default function Treino({ core, upCore, split, today, ws, setWs }) {
     let volume = 0;
     const exercisesLog = {};
     w.ex.forEach((e) => {
-      const ss = getSets(e).map((s) => ({ ...s, type: s.type || "normal" }));
+      const ss = getSets(e).map((set) => ({
+        ...stripSetEditingMetadata(set),
+        type: set.type || "normal",
+      }));
       exercisesLog[e.id] = {
         exerciseId: e.exerciseId || null,
         name: e.name,
