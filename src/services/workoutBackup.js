@@ -39,14 +39,31 @@ export function parseBackup(text) {
   if (data?.app !== "brasafit" || !data.core || typeof data.core !== "object" || Array.isArray(data.core)) {
     throw new Error("Este arquivo não parece ser um backup do BrasaFit.");
   }
+  if (
+    data.backupVersion != null &&
+    (!Number.isInteger(data.backupVersion) || data.backupVersion < 1 || data.backupVersion > 1)
+  ) {
+    throw new Error("Versão de backup incompatível com esta versão do BrasaFit.");
+  }
+  if (
+    data.coreVersion != null &&
+    (!Number.isInteger(data.coreVersion) || data.coreVersion < 1 || data.coreVersion > CURRENT_CORE_VERSION)
+  ) {
+    throw new Error("Versão dos dados incompatível com esta versão do BrasaFit.");
+  }
   const core = data.core;
   // estrutura mínima: coleções precisam ter o tipo certo (ou estar ausentes)
   const badShape =
     (core.sessions != null && !Array.isArray(core.sessions)) ||
+    (core.cardio != null && !Array.isArray(core.cardio)) ||
     (core.weights != null && !Array.isArray(core.weights)) ||
     (core.waterByDay != null && (typeof core.waterByDay !== "object" || Array.isArray(core.waterByDay))) ||
     (core.doneDays != null && (typeof core.doneDays !== "object" || Array.isArray(core.doneDays))) ||
-    (core.workouts != null && (typeof core.workouts !== "object" || Array.isArray(core.workouts)));
+    (core.workouts != null && (typeof core.workouts !== "object" || Array.isArray(core.workouts))) ||
+    (core.schedule != null && (typeof core.schedule !== "object" || Array.isArray(core.schedule))) ||
+    (core.planChosen != null && typeof core.planChosen !== "boolean") ||
+    (core.updatedAt != null &&
+      (typeof core.updatedAt !== "string" || Number.isNaN(Date.parse(core.updatedAt))));
   if (badShape) {
     throw new Error("Backup corrompido: a estrutura dos dados não confere.");
   }

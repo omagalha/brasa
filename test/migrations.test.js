@@ -9,6 +9,9 @@ describe("migrações", () => {
     expect(c.schedule).toBeTruthy();
     expect(Object.keys(c.workouts).length).toBeGreaterThan(0);
     expect(c.waterByDay["2026-07-01"]).toBe(2000);
+    expect(c.cardio).toEqual([]);
+    expect(c.updatedAt).toBe(null);
+    expect(c.planChosen).toBe(true);
   });
 
   it("converte sessões sets{} para exercises{} resolvendo instâncias", () => {
@@ -28,5 +31,38 @@ describe("migrações", () => {
     const once = migrateCore(structuredClone(EMPTY_CORE));
     const twice = migrateCore(once);
     expect(twice).toEqual(once);
+  });
+
+  it("preserva os dados antigos ao adicionar a fundação v4", () => {
+    const legacy = {
+      version: 3,
+      waterByDay: { "2026-07-01": 2200 },
+      weights: [{ date: "2026-07-01", kg: 80 }],
+      sessions: [{ id: "s1", date: "2026-07-01", split: "A", exercises: {} }],
+      doneDays: { "2026-07-01": true },
+    };
+
+    const c = migrateCore(legacy);
+
+    expect(c).toMatchObject({
+      version: 4,
+      waterByDay: legacy.waterByDay,
+      weights: legacy.weights,
+      sessions: legacy.sessions,
+      doneDays: legacy.doneDays,
+      cardio: [],
+      updatedAt: null,
+      planChosen: true,
+    });
+  });
+
+  it("mantém campos v4 válidos", () => {
+    const updatedAt = "2026-07-18T12:00:00.000Z";
+    const cardio = [{ id: "run-1", kind: "corrida", minutes: 30 }];
+    const c = migrateCore({ version: 4, cardio, updatedAt, planChosen: false });
+
+    expect(c.cardio).toEqual(cardio);
+    expect(c.updatedAt).toBe(updatedAt);
+    expect(c.planChosen).toBe(false);
   });
 });

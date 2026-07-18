@@ -1,7 +1,7 @@
 import { DEFAULT_PLAN, DEFAULT_WORKOUTS } from "../data/workoutTemplates";
 import { EXERCISES_BY_ID } from "../data/exercises";
 
-export const CURRENT_CORE_VERSION = 3;
+export const CURRENT_CORE_VERSION = 4;
 
 export const EMPTY_CORE = {
   version: CURRENT_CORE_VERSION,
@@ -13,7 +13,10 @@ export const EMPTY_CORE = {
   activePlanName: DEFAULT_PLAN.name,
   schedule: structuredClone(DEFAULT_PLAN.schedule),
   sessions: [],
+  cardio: [],
   doneDays: {},
+  updatedAt: null,
+  planChosen: false,
 };
 
 // tenta descobrir o exercício-base a partir do id da instância ("supino-reto-barra-2")
@@ -59,10 +62,29 @@ export function migrateCore(savedCore) {
     core.version = 3;
   }
 
+  if (core.version < 4) {
+    core.cardio = Array.isArray(core.cardio) ? core.cardio : [];
+    core.updatedAt =
+      typeof core.updatedAt === "string" && !Number.isNaN(Date.parse(core.updatedAt))
+        ? core.updatedAt
+        : null;
+    // Quem já usava uma versão anterior deve continuar direto no app.
+    core.planChosen =
+      typeof core.planChosen === "boolean" ? core.planChosen : true;
+    core.version = 4;
+  }
+
   core.waterGoal ||= 3000;
   core.waterByDay ||= {};
   core.weights ||= [];
   core.sessions ||= [];
+  core.cardio = Array.isArray(core.cardio) ? core.cardio : [];
   core.doneDays ||= {};
+  core.updatedAt =
+    typeof core.updatedAt === "string" && !Number.isNaN(Date.parse(core.updatedAt))
+      ? core.updatedAt
+      : null;
+  core.planChosen =
+    typeof core.planChosen === "boolean" ? core.planChosen : false;
   return core;
 }

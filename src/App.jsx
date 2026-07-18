@@ -35,6 +35,7 @@ export default function App() {
   const upCore = (fn) =>
     setCore((c) => {
       const n = fn(structuredClone(c));
+      n.updatedAt = new Date().toISOString();
       saveKey("brasa-core", n);
       return n;
     });
@@ -90,6 +91,7 @@ export default function App() {
       const next = structuredClone(current);
       if (dayCompleted) next.doneDays[todayKey] = true;
       else delete next.doneDays[todayKey];
+      next.updatedAt = new Date().toISOString();
       saveKey("brasa-core", next);
       return next;
     });
