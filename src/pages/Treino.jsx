@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { C } from "../constants/theme";
 import { fromKey } from "../utils/dates";
 import { buildWorkouts } from "../services/workoutBuilder";
+import { resolveDay } from "../services/schedule";
 import { suggestProgression } from "../services/progressionEngine";
 import { getExercisePerformances, getLastDoneSets } from "../services/workoutHistory";
 import { getExerciseRecords } from "../services/personalRecords";
@@ -200,7 +201,7 @@ export default function Treino({ core, upCore, split, today, ws, setWs }) {
       c.activePlanName = tpl.name;
       return c;
     });
-    const todayWorkout = nextSchedule[new Date().getDay()];
+    const todayWorkout = resolveDay(nextSchedule, new Date(), nextWorkouts).split;
     const firstWorkout = Object.keys(nextWorkouts)[0];
     resetSession({
       sel: todayWorkout && nextWorkouts[todayWorkout] ? todayWorkout : firstWorkout,

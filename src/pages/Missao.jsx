@@ -60,14 +60,23 @@ function SecondaryTask({ icon, title, description, action, onClick }) {
   );
 }
 
-export default function Missao({ core, split, restDay, waterToday, waterOK, trainedToday, streak, checkinDue, daysSinceWeight, lastWeight, setTab }) {
+export default function Missao({
+  core, split, restDay, waterToday, waterOK, trainedToday, streak,
+  checkinDue, daysSinceWeight, lastWeight, setTab, cardioGoal, dayCompletion,
+}) {
   const workout = split ? core.workouts[split] : null;
+  const cardioProgress = dayCompletion.cardioProgress;
+  const cardioOnly = !split && Boolean(cardioGoal);
+  const cardioLabel = cardioGoal
+    ? `${cardioGoal.kind[0].toUpperCase()}${cardioGoal.kind.slice(1)}`
+    : "";
   const waterGoal = Math.max(1, core.waterGoal);
   const waterPct = clamp01(waterToday / waterGoal);
   const waterRemaining = Math.max(0, waterGoal - waterToday);
 
   const dailyStates = [
     !restDay && workout ? trainedToday : null,
+    cardioGoal ? cardioProgress.completed : null,
     waterOK,
     checkinDue ? false : null,
   ].filter((state) => state !== null);
@@ -81,6 +90,11 @@ export default function Missao({ core, split, restDay, waterToday, waterOK, trai
       description: `Faltam ${(waterRemaining / 1000).toFixed(2)} L para sua meta`,
       action: "Abrir hidratação", tab: "agua",
     },
+    cardioGoal && !cardioProgress.completed && !cardioOnly && {
+      icon: "heart", title: `Completar ${cardioLabel.toLowerCase()}`,
+      description: `${cardioProgress.minutes} de ${cardioProgress.target} minutos registrados`,
+      action: "Abrir cardio", tab: "cardio",
+    },
     checkinDue && {
       icon: "camera", title: "Atualizar evolução",
       description: lastWeight ? `Último registro há ${daysSinceWeight} dias` : "Registre seu peso e suas fotos",
@@ -90,6 +104,10 @@ export default function Missao({ core, split, restDay, waterToday, waterOK, trai
 
   const workoutStatus = restDay
     ? "Priorize sono, mobilidade e hidratação."
+    : cardioOnly
+      ? cardioProgress.completed
+        ? "Meta de cardio concluída hoje. Excelente trabalho."
+        : `${cardioProgress.minutes} de ${cardioProgress.target} minutos registrados.`
     : trainedToday
       ? "Treino finalizado hoje. Excelente trabalho."
       : workout
@@ -117,7 +135,9 @@ export default function Missao({ core, split, restDay, waterToday, waterOK, trai
         </div>
       </header>
 
-      <button type="button" onClick={() => setTab("treino")} aria-label={restDay ? "Abrir treinos no dia de recuperação" : "Abrir treino de hoje"} style={{
+      <button type="button" onClick={() => setTab(cardioOnly ? "cardio" : "treino")} aria-label={
+        cardioOnly ? "Abrir cardio de hoje" : restDay ? "Abrir treinos no dia de recuperação" : "Abrir treino de hoje"
+      } style={{
         position: "relative", isolation: "isolate", width: "100%", minHeight: 210,
         padding: 20, overflow: "hidden", borderRadius: 20, textAlign: "left", cursor: "pointer",
         color: C.text, border: `1px solid rgba(255,90,31,0.22)`,
@@ -130,18 +150,18 @@ export default function Missao({ core, split, restDay, waterToday, waterOK, trai
         }} />
         <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <span style={{ color: C.primary, fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>
-            {restDay ? "Recuperação" : `Treino ${split || "de hoje"}`}
+            {restDay ? "Recuperação" : cardioOnly ? "Cardio de hoje" : `Treino ${split || "de hoje"}`}
           </span>
           <span aria-hidden="true" style={{
             width: 38, height: 38, borderRadius: 12, display: "grid", placeItems: "center",
             color: C.primary, background: "rgba(255,90,31,0.13)",
           }}>
-            <Icon name={restDay ? "moon" : "dumbbell"} size={20} color="currentColor" />
+            <Icon name={restDay ? "moon" : cardioOnly ? "heart" : "dumbbell"} size={20} color="currentColor" />
           </span>
         </span>
         <span style={{ display: "block", maxWidth: 310, marginTop: 24 }}>
           <span style={{ display: "block", fontSize: 25, lineHeight: 1.15, fontWeight: 800, letterSpacing: -0.7 }}>
-            {restDay ? "Dia de recuperação" : workout?.label || "Sem treino programado"}
+            {restDay ? "Dia de recuperação" : cardioOnly ? `${cardioLabel} · ${cardioGoal.minutes} min` : workout?.label || "Sem treino programado"}
           </span>
           <span style={{ display: "block", minHeight: 38, color: C.mut, fontSize: 13, lineHeight: 1.45, marginTop: 8 }}>
             {workoutStatus}
@@ -150,12 +170,18 @@ export default function Missao({ core, split, restDay, waterToday, waterOK, trai
         <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 18 }}>
           <span style={{
             display: "inline-flex", minHeight: 38, padding: "0 15px", alignItems: "center", justifyContent: "center",
-            borderRadius: 11, color: trainedToday ? C.success : "#FFFFFF",
-            background: trainedToday ? "rgba(70,200,120,0.12)" : restDay ? C.surface2 : C.primary,
-            border: `1px solid ${trainedToday ? "rgba(70,200,120,0.22)" : restDay ? C.lineStrong : C.primary}`,
+            borderRadius: 11, color: (trainedToday || (cardioOnly && cardioProgress.completed)) ? C.success : "#FFFFFF",
+            background: (trainedToday || (cardioOnly && cardioProgress.completed)) ? "rgba(70,200,120,0.12)" : restDay ? C.surface2 : C.primary,
+            border: `1px solid ${(trainedToday || (cardioOnly && cardioProgress.completed)) ? "rgba(70,200,120,0.22)" : restDay ? C.lineStrong : C.primary}`,
             fontSize: 13, fontWeight: 800,
           }}>
-            {trainedToday ? "✓ Concluído" : restDay ? "Ver treinos" : "Iniciar treino"}
+            {trainedToday || (cardioOnly && cardioProgress.completed)
+              ? "✓ Concluído"
+              : restDay
+                ? "Ver treinos"
+                : cardioOnly
+                  ? "Registrar cardio"
+                  : "Iniciar treino"}
           </span>
           {!restDay && workout && (
             <span style={{ color: C.dim, fontSize: 12, fontWeight: 600 }}>{workout.ex.length} exercícios</span>

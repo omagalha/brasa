@@ -74,6 +74,25 @@ export const WORKOUT_TEMPLATES = [
       C: { label: "Ombros · Braços", exercises: ["desenvolvimento-halteres", "elevacao-lateral", "rosca-alternada", "triceps-barra"] },
     },
   },
+  {
+    id: "hibrido-forca-corrida", name: "Híbrido — Força e Corrida",
+    description: "Força três vezes por semana combinada com corrida e caminhada.",
+    level: "Intermediário", frequency: 5,
+    schedule: {
+      0: null,
+      1: { split: "A", cardio: { kind: "corrida", minutes: 15 } },
+      2: { cardio: { kind: "corrida", minutes: 30 } },
+      3: { split: "B" },
+      4: { cardio: { kind: "corrida", minutes: 30 } },
+      5: { split: "C", cardio: { kind: "caminhada", minutes: 20 } },
+      6: null,
+    },
+    workouts: {
+      A: { label: "Peito · Ombro · Tríceps", exercises: ["supino-reto-barra", "supino-inclinado-halteres", "desenvolvimento-halteres", "elevacao-lateral", "triceps-corda"] },
+      B: { label: "Costas · Bíceps", exercises: ["puxada-frente", "remada-baixa", "remada-curvada", "rosca-direta", "rosca-martelo"] },
+      C: { label: "Pernas · Abdômen", exercises: ["agachamento-livre", "leg-press", "cadeira-extensora", "mesa-flexora", "panturrilha-em-pe", "prancha"] },
+    },
+  },
 ];
 
 export const DEFAULT_PLAN = WORKOUT_TEMPLATES[0];

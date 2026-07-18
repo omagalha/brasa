@@ -10,9 +10,7 @@ export const daysBetween = (a, b) =>
   Math.round((fromKey(a) - fromKey(b)) / 86400000);
 
 export const splitOfDate = (d = new Date(), schedule, workouts) => {
-  if (!schedule) return null;
-  const k = schedule[d.getDay()];
-  return k && workouts?.[k] ? k : null;
+  return resolveDay(schedule, d, workouts).split;
 };
 
 export const streakOf = (doneDays) => {
@@ -25,3 +23,4 @@ export const streakOf = (doneDays) => {
   }
   return s;
 };
+import { resolveDay } from "../services/schedule";

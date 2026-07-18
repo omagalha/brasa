@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { C } from "./constants/theme";
 import { EMPTY_CORE, migrateCore } from "./storage/migrations";
-import { dkey, daysBetween, splitOfDate, streakOf } from "./utils/dates";
+import { dkey, daysBetween, streakOf } from "./utils/dates";
+import { getDayCompletion, resolveDay } from "./services/schedule";
 import { loadKey, saveKey, onSaveError } from "./utils/storage";
 import { loadPhotos, savePhotos, deleteAllPhotos } from "./storage/photoStorage";
 import { usePersistentWorkout, EMPTY_SESSION } from "./hooks/usePersistentWorkout";
@@ -55,7 +56,7 @@ export default function App() {
     setPhotos({ items: [] });
     deleteAllPhotos();
     const t = dkey();
-    const sp = fresh.schedule?.[new Date().getDay()];
+    const sp = resolveDay(fresh.schedule, new Date(), fresh.workouts).split;
     clearSession({
       date: t,
       sel: sp && fresh.workouts[sp] ? sp : Object.keys(fresh.workouts)[0],
@@ -67,7 +68,7 @@ export default function App() {
     if (!core || !ws || draftChecked.current) return;
     draftChecked.current = true;
     const t = dkey();
-    const todaySplit = splitOfDate(new Date(), core.schedule, core.workouts);
+    const todaySplit = resolveDay(core.schedule, new Date(), core.workouts).split;
     const firstWorkout = Object.keys(core.workouts)[0] || "A";
     const selForToday = todaySplit && core.workouts[todaySplit] ? todaySplit : firstWorkout;
     const hasProgress = ws.startTs || Object.keys(ws.progress || {}).length > 0;
@@ -79,14 +80,15 @@ export default function App() {
   useEffect(() => {
     if (!core) return;
     const todayKey = dkey();
-    const todaySplit = core.schedule?.[new Date().getDay()] || null;
-    const waterCompleted = (core.waterByDay[todayKey] || 0) >= core.waterGoal;
-    const workoutCompleted = todaySplit
-      ? core.sessions.some(
-          (s) => s.date === todayKey && s.split === todaySplit && s.completed !== false
-        )
-      : true;
-    const dayCompleted = waterCompleted && workoutCompleted;
+    const todayDay = resolveDay(core.schedule, new Date(), core.workouts);
+    const dayCompleted = getDayCompletion({
+      day: todayDay,
+      dateKey: todayKey,
+      sessions: core.sessions,
+      cardio: core.cardio,
+      water: core.waterByDay[todayKey] || 0,
+      waterGoal: core.waterGoal,
+    }).completed;
     if (Boolean(core.doneDays[todayKey]) === dayCompleted) return;
     setCore((current) => {
       const next = structuredClone(current);
@@ -96,7 +98,7 @@ export default function App() {
       saveKey("brasa-core", next);
       return next;
     });
-  }, [core?.waterByDay, core?.waterGoal, core?.sessions]);
+  }, [core?.waterByDay, core?.waterGoal, core?.sessions, core?.cardio, core?.schedule]);
 
   if (!core || !photos || !ws)
     return (
@@ -106,13 +108,20 @@ export default function App() {
     );
 
   const today = dkey();
-  const split = core.schedule?.[new Date().getDay()] || null;
+  const todayDay = resolveDay(core.schedule, new Date(), core.workouts);
+  const split = todayDay.split;
   const waterToday = core.waterByDay[today] || 0;
   const waterOK = waterToday >= core.waterGoal;
-  const trainedToday = split
-    ? core.sessions.some((s) => s.date === today && s.split === split && s.completed !== false)
-    : false;
-  const restDay = !split;
+  const dayCompletion = getDayCompletion({
+    day: todayDay,
+    dateKey: today,
+    sessions: core.sessions,
+    cardio: core.cardio,
+    water: waterToday,
+    waterGoal: core.waterGoal,
+  });
+  const trainedToday = dayCompletion.workoutCompleted && Boolean(split);
+  const restDay = !split && !todayDay.cardio;
   const streak = streakOf(core.doneDays);
 
   const lastWeight = core.weights.length ? core.weights[core.weights.length - 1] : null;
@@ -156,14 +165,24 @@ export default function App() {
             Brasa<span style={{ color: C.primary }}>Fit</span>
           </div>
           <div style={{ color: C.dim, fontSize: 12, fontWeight: 500 }}>
-            {split ? `Treino ${split} hoje` : "Descanso hoje"}
+            {split && todayDay.cardio
+              ? `Treino ${split} + cardio`
+              : split
+                ? `Treino ${split} hoje`
+                : todayDay.cardio
+                  ? "Cardio hoje"
+                  : "Descanso hoje"}
           </div>
         </div>
       </header>
 
       <div style={{ padding: "14px 18px 110px" }}>
         {tab === "missao" && (
-          <Missao {...{ core, split, restDay, waterToday, waterOK, trainedToday, streak, checkinDue, daysSinceWeight, lastWeight, setTab }} />
+          <Missao {...{
+            core, split, restDay, waterToday, waterOK, trainedToday, streak,
+            checkinDue, daysSinceWeight, lastWeight, setTab,
+            cardioGoal: todayDay.cardio, dayCompletion,
+          }} />
         )}
         {tab === "treino" && <Treino {...{ core, upCore, split, today, ws, setWs }} />}
         {tab === "cardio" && <Cardio {...{ core, upCore, today }} />}
